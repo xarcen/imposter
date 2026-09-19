@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Imposter – Partyspiel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="description" content="Das Imposter-Partyspiel für unterwegs: ein Handy, alle Spieler, ein Schwindler.">
+<meta name="theme-color" content="#11132a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Imposter">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<style>
+:root{
+  --bg:#0e1020;
+  --bg2:#171a35;
+  --card:#1e2142;
+  --card2:#272b52;
+  --line:#343a69;
+  --text:#f2f3ff;
+  --muted:#a0a5cc;
+  --accent:#6c5cff;
+  --accent2:#9b7bff;
+  --good:#28c99a;
+  --bad:#ff5470;
+  --radius:20px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+  font-size:17px;line-height:1.4;
+  background-image:radial-gradient(120% 60% at 50% 0%,#252a5c 0%,rgba(14,16,32,0) 70%);
+  background-attachment:fixed;
+  overscroll-behavior:none;
+  -webkit-user-select:none;user-select:none;
+  touch-action:manipulation;
+}
+#app{
+  min-height:100dvh;display:flex;flex-direction:column;
+  padding:calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 14px);
+  max-width:560px;margin:0 auto;
+}
+.screen{display:none;flex:1;flex-direction:column;animation:in .22s ease}
+.screen.active{display:flex}
+@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+h1{font-size:40px;line-height:1.05;margin:0 0 6px;letter-spacing:-.02em;font-weight:800}
+h2{font-size:26px;margin:0 0 4px;font-weight:800;letter-spacing:-.01em}
+p.sub{color:var(--muted);margin:0 0 20px}
+.spacer{flex:1}
+
+/* Buttons */
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+  min-height:58px;padding:16px;border-radius:var(--radius);font-weight:700;font-size:18px;
+  background:linear-gradient(180deg,var(--accent2),var(--accent));color:#fff;
+  box-shadow:0 8px 24px rgba(108,92,255,.35);
+  transition:transform .08s ease,opacity .15s;
+}
+.btn:active{transform:scale(.97)}
+.btn.secondary{background:var(--card);box-shadow:none;border:1px solid var(--line);color:var(--text)}
+.btn.ghost{background:none;box-shadow:none;color:var(--muted);min-height:48px;font-size:16px;font-weight:600}
+.btn.danger{background:linear-gradient(180deg,#ff7a90,var(--bad));box-shadow:0 8px 24px rgba(255,84,112,.3)}
+.btn[disabled]{opacity:.4;pointer-events:none}
+.btn-row{display:flex;gap:10px}
+
+/* Cards / blocks */
+.block{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:12px}
+.block h3{margin:0 0 10px;font-size:14px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}
+.row + .row{border-top:1px solid var(--line);margin-top:6px;padding-top:6px}
+.row .label{font-weight:600}
+.row .hint{display:block;font-size:13px;color:var(--muted);font-weight:400}
+
+/* Stepper */
+.stepper{display:flex;align-items:center;gap:6px;background:var(--bg2);border-radius:14px;padding:4px}
+.stepper button{width:42px;height:42px;border-radius:11px;background:var(--card2);font-size:24px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.stepper button:active{background:var(--accent)}
+.stepper .val{min-width:42px;text-align:center;font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+
+/* Switch */
+.switch{width:56px;height:32px;border-radius:999px;background:var(--card2);position:relative;transition:background .2s;flex:0 0 auto}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;transition:transform .2s}
+.switch.on{background:var(--good)}
+.switch.on::after{transform:translateX(24px)}
+
+/* Chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{
+  padding:10px 14px;border-radius:999px;background:var(--bg2);border:1px solid var(--line);
+  font-size:15px;font-weight:600;display:flex;align-items:center;gap:6px;
+}
+.chip.on{background:var(--accent);border-color:var(--accent2);box-shadow:0 4px 14px rgba(108,92,255,.35)}
+.seg{display:flex;background:var(--bg2);border-radius:14px;padding:4px;gap:4px}
+.seg button{flex:1;padding:10px 6px;border-radius:11px;font-weight:700;font-size:15px;color:var(--muted)}
+.seg button.on{background:var(--accent);color:#fff}
+
+/* Namen */
+.names{display:flex;flex-direction:column;gap:8px}
+.names input{
+  width:100%;padding:13px 14px;border-radius:14px;border:1px solid var(--line);
+  background:var(--bg2);color:var(--text);font:inherit;-webkit-user-select:text;user-select:text;
+}
+.names input:focus{outline:2px solid var(--accent);border-color:transparent}
+
+/* Reveal card */
+.passname{font-size:34px;font-weight:800;text-align:center;margin:10px 0 4px}
+.progress{text-align:center;color:var(--muted);font-size:15px;margin-bottom:16px}
+.holder{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:linear-gradient(160deg,var(--card2),var(--card));
+  border:1px solid var(--line);border-radius:28px;padding:24px;text-align:center;margin-bottom:14px;
+  position:relative;overflow:hidden;min-height:260px;
+}
+.holder.armed{background:linear-gradient(160deg,#2b2f63,#20244a)}
+.holder .big{font-size:38px;font-weight:800;letter-spacing:-.02em;word-break:break-word;line-height:1.15}
+.holder .small{color:var(--muted);margin-top:10px;font-size:16px}
+.holder .icon{font-size:56px;margin-bottom:12px}
+.imposter .big{color:var(--bad)}
+.word .big{color:var(--good)}
+.hidden{display:none !important}
+
+/* Timer */
+.timer{font-size:62px;font-weight:800;text-align:center;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.ring{display:flex;justify-content:center;margin:6px 0 14px}
+.startplayer{text-align:center;font-size:22px;font-weight:700;margin:6px 0 2px}
+.rules{color:var(--muted);font-size:16px}
+.rules li{margin-bottom:10px}
+.rules b{color:var(--text)}
+.badge{display:inline-block;background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:13px;color:var(--muted);font-weight:600}
+.list-people{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px}
+.person{padding:8px 12px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);font-weight:600;font-size:15px}
+.person.is{background:rgba(255,84,112,.18);border-color:var(--bad);color:#ffc2cd}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;min-height:36px}
+.back{font-size:16px;font-weight:600;color:var(--muted);padding:6px 4px}
+#install{margin-top:8px}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HOME -->
+  <section id="s-home" class="screen active">
+    <div class="spacer"></div>
+    <div style="text-align:center">
+      <div style="font-size:74px;line-height:1">🕵️</div>
+      <h1>Imposter</h1>
+      <p class="sub">Alle kennen das Wort.<br>Einer nicht. Wer ist es?</p>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn" onclick="go('setup')">Spiel starten</button>
+    <button class="btn ghost" onclick="go('rules')">So wird gespielt</button>
+    <button class="btn ghost hidden" id="install">📲 Als App installieren</button>
+  </section>
+
+  <!-- REGELN -->
+  <section id="s-rules" class="screen">
+    <div class="topbar"><button class="back" onclick="go('home')">‹ Zurück</button><span class="badge">Anleitung</span></div>
+    <h2>So wird gespielt</h2>
+    <p class="sub">Ihr braucht nur dieses eine Handy.</p>
+    <div class="block">
+      <ol class="rules">
+        <li><b>Handy herumgeben.</b> Jeder schaut seine Karte alleine an (Finger auf die Karte halten).</li>
+        <li><b>Alle bekommen dasselbe Wort</b> – ausser dem Imposter. Der sieht nur, dass er der Imposter ist.</li>
+        <li><b>Reihum je ein Hinweis.</b> Ein einzelnes Wort, das zum Geheimwort passt – aber nicht zu offensichtlich, sonst errät es der Imposter.</li>
+        <li><b>Der Imposter blufft</b> und tut so, als kenne er das Wort.</li>
+        <li><b>Diskutieren und abstimmen:</b> Auf drei zeigen alle gleichzeitig auf eine Person.</li>
+        <li><b>Auflösen:</b> Die Gruppe gewinnt, wenn sie den Imposter erwischt. Der Imposter gewinnt, wenn er durchkommt – oder das Wort errät.</li>
+      </ol>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn" onclick="go('setup')">Los geht's</button>
+  </section>
+
+  <!-- SETUP -->
+  <section id="s-setup" class="screen">
+    <div class="topbar"><button class="back" onclick="go('home')">‹ Zurück</button><span class="badge">Einstellungen</span></div>
+    <h2>Runde vorbereiten</h2>
+    <p class="sub">Einmal einstellen – wird gespeichert.</p>
+
+    <div class="block">
+      <div class="row">
+        <div><span class="label">Spieler</span><span class="hint">mindestens 3</span></div>
+        <div class="stepper">
+          <button onclick="chPlayers(-1)">−</button><div class="val" id="v-players">5</div><button onclick="chPlayers(1)">+</button>
+        </div>
+      </div>
+      <div class="row">
+        <div><span class="label">Imposter</span><span class="hint" id="h-imp">1 Schwindler</span></div>
+        <div class="stepper">
+          <button onclick="chImps(-1)">−</button><div class="val" id="v-imps">1</div><button onclick="chImps(1)">+</button>
+        </div>
+      </div>
+      <div class="row">
+        <div><span class="label">Eigene Namen</span><span class="hint">statt «Spieler 1, 2, 3…»</span></div>
+        <div class="switch" id="sw-names" onclick="toggle('useNames')"></div>
+      </div>
+    </div>
+
+    <div class="block hidden" id="b-names">
+      <h3>Namen</h3>
+      <div class="names" id="names"></div>
+    </div>
+
+    <div class="block">
+      <h3>Kategorien</h3>
+      <div class="chips" id="cats"></div>
+    </div>
+
+    <div class="block">
+      <div class="row">
+        <div><span class="label">Hinweis für Imposter</span><span class="hint">er sieht die Kategorie</span></div>
+        <div class="switch" id="sw-hint" onclick="toggle('hint')"></div>
+      </div>
+      <div class="row">
+        <div><span class="label">Startspieler auslosen</span><span class="hint">wer zuerst einen Hinweis gibt</span></div>
+        <div class="switch" id="sw-start" onclick="toggle('startPlayer')"></div>
+      </div>
+      <div class="row" style="flex-direction:column;align-items:stretch">
+        <div style="margin-bottom:8px"><span class="label">Timer für die Diskussion</span></div>
+        <div class="seg" id="seg-timer"></div>
+      </div>
+    </div>
+
+    <div class="spacer" style="min-height:10px"></div>
+    <button class="btn" onclick="startGame()">Karten verteilen</button>
+  </section>
+
+  <!-- PASS -->
+  <section id="s-pass" class="screen">
+    <div class="topbar"><button class="back" onclick="abort()">‹ Abbrechen</button><span class="badge" id="pass-badge"></span></div>
+    <div class="spacer"></div>
+    <div style="text-align:center;font-size:56px">📱</div>
+    <div class="passname" id="pass-name">Spieler 1</div>
+    <div class="progress">Handy weitergeben – nur du darfst schauen.</div>
+    <div class="spacer"></div>
+    <button class="btn" onclick="go('card')">Karte ansehen</button>
+  </section>
+
+  <!-- CARD -->
+  <section id="s-card" class="screen">
+    <div class="topbar"><span class="badge" id="card-badge"></span><span class="badge" id="card-who"></span></div>
+    <div class="holder" id="holder">
+      <div id="cover">
+        <div class="icon">👆</div>
+        <div class="big">Gedrückt halten</div>
+        <div class="small">Finger auf die Karte legen und halten.<br>Loslassen = wieder verdeckt.</div>
+      </div>
+      <div id="content" class="hidden"></div>
+    </div>
+    <button class="btn" id="next-btn" disabled onclick="nextPlayer()">Weiter</button>
+  </section>
+
+  <!-- PLAY -->
+  <section id="s-play" class="screen">
+    <div class="topbar"><button class="back" onclick="abort()">‹ Abbrechen</button><span class="badge" id="play-badge"></span></div>
+    <div class="spacer"></div>
+    <div id="startbox">
+      <div class="progress" style="margin:0">Beginnt mit dem ersten Hinweis</div>
+      <div class="startplayer" id="start-name">—</div>
+    </div>
+    <div id="timerbox" class="hidden">
+      <div class="timer" id="timer">3:00</div>
+      <div class="ring"><button class="btn secondary" style="width:auto;padding:10px 20px;min-height:44px" id="pause" onclick="togglePause()">Pause</button></div>
+    </div>
+    <div class="progress" id="play-hint">Reihum je ein Wort sagen, dann diskutieren und abstimmen.</div>
+    <div class="spacer"></div>
+    <button class="btn danger" onclick="reveal()">Auflösen</button>
+  </section>
+
+  <!-- REVEAL -->
+  <section id="s-reveal" class="screen">
+    <div class="topbar"><span class="badge">Auflösung</span><span class="badge" id="rev-cat"></span></div>
+    <div class="spacer"></div>
+    <div style="text-align:center">
+      <div class="progress" style="margin-bottom:2px">Das Geheimwort war</div>
+      <div class="big" style="font-size:38px;font-weight:800;color:var(--good)" id="rev-word">—</div>
+      <div class="progress" style="margin:20px 0 2px" id="rev-label">Der Imposter war</div>
+      <div class="list-people" id="rev-people"></div>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn" onclick="startGame()">Nochmal spielen</button>
+    <div class="btn-row" style="margin-top:10px">
+      <button class="btn secondary" onclick="go('setup')">Einstellungen</button>
+      <button class="btn secondary" onclick="go('home')">Startseite</button>
+    </div>
+  </section>
+
+</div>
+
+<script src="words.js"></script>
+<script>
+/* ---------- Einstellungen ---------- */
+const TIMERS = [0,60,120,180,300];
+const TIMER_LABELS = ["Aus","1 min","2 min","3 min","5 min"];
+const DEFAULTS = {players:5, imps:1, useNames:false, names:[], hint:true, startPlayer:true, timer:0, cats:CATEGORIES.map(c=>c.id)};
+let S = load();
+
+function load(){
+  try{
+    const raw = JSON.parse(localStorage.getItem("imposter") || "{}");
+    const s = Object.assign({}, DEFAULTS, raw);
+    if(!Array.isArray(s.cats) || !s.cats.length) s.cats = DEFAULTS.cats.slice();
+    s.cats = s.cats.filter(id => CATEGORIES.some(c=>c.id===id));
+    if(!s.cats.length) s.cats = DEFAULTS.cats.slice();
+    return s;
+  }catch(e){ return Object.assign({}, DEFAULTS); }
+}
+function save(){ try{ localStorage.setItem("imposter", JSON.stringify(S)); }catch(e){} }
+
+/* ---------- Navigation ---------- */
+let curScreen = "home";
+function go(name){
+  curScreen = name;
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById("s-"+name).classList.add("active");
+  window.scrollTo(0,0);
+  if(name==="card") prepCard();
+}
+function buzz(ms){ if(navigator.vibrate) try{ navigator.vibrate(ms); }catch(e){} }
+
+/* ---------- Setup UI ---------- */
+function maxImps(){ return Math.max(1, Math.floor((S.players-1)/2)); }
+function chPlayers(d){
+  S.players = Math.min(20, Math.max(3, S.players + d));
+  if(S.imps > maxImps()) S.imps = maxImps();
+  save(); renderSetup(); buzz(8);
+}
+function chImps(d){
+  S.imps = Math.min(maxImps(), Math.max(1, S.imps + d));
+  save(); renderSetup(); buzz(8);
+}
+function toggle(key){ S[key] = !S[key]; save(); renderSetup(); buzz(8); }
+function toggleCat(id){
+  const i = S.cats.indexOf(id);
+  if(i<0) S.cats.push(id);
+  else if(S.cats.length>1) S.cats.splice(i,1);
+  save(); renderSetup(); buzz(8);
+}
+function allCats(){
+  S.cats = (S.cats.length===CATEGORIES.length) ? [CATEGORIES[0].id] : CATEGORIES.map(c=>c.id);
+  save(); renderSetup(); buzz(8);
+}
+function setTimer(i){ S.timer = TIMERS[i]; save(); renderSetup(); buzz(8); }
+
+function playerName(i){
+  if(!S.useNames) return "Spieler " + (i+1);
+  const n = (S.names[i]||"").trim();
+  return n || ("Spieler " + (i+1));
+}
+
+function renderSetup(){
+  document.getElementById("v-players").textContent = S.players;
+  document.getElementById("v-imps").textContent = S.imps;
+  document.getElementById("h-imp").textContent = S.imps===1 ? "1 Schwindler" : S.imps+" Schwindler";
+  document.getElementById("sw-names").classList.toggle("on", S.useNames);
+  document.getElementById("sw-hint").classList.toggle("on", S.hint);
+  document.getElementById("sw-start").classList.toggle("on", S.startPlayer);
+  document.getElementById("b-names").classList.toggle("hidden", !S.useNames);
+
+  // Namen
+  const box = document.getElementById("names");
+  if(S.useNames && box.childElementCount !== S.players){
+    box.innerHTML = "";
+    for(let i=0;i<S.players;i++){
+      const inp = document.createElement("input");
+      inp.type="text"; inp.placeholder = "Spieler " + (i+1);
+      inp.value = S.names[i] || ""; inp.maxLength = 14;
+      inp.autocomplete = "off"; inp.autocapitalize = "words";
+      inp.oninput = e => { S.names[i] = e.target.value; save(); };
+      box.appendChild(inp);
+    }
+  }
+
+  // Kategorien
+  const cats = document.getElementById("cats");
+  cats.innerHTML = "";
+  const all = document.createElement("button");
+  all.className = "chip" + (S.cats.length===CATEGORIES.length ? " on" : "");
+  all.innerHTML = "🎲 Alle";
+  all.onclick = allCats;
+  cats.appendChild(all);
+  CATEGORIES.forEach(c=>{
+    const b = document.createElement("button");
+    b.className = "chip" + (S.cats.includes(c.id) ? " on" : "");
+    b.innerHTML = c.emoji + " " + c.name;
+    b.onclick = ()=>toggleCat(c.id);
+    cats.appendChild(b);
+  });
+
+  // Timer
+  const seg = document.getElementById("seg-timer");
+  seg.innerHTML = "";
+  TIMERS.forEach((t,i)=>{
+    const b = document.createElement("button");
+    b.textContent = TIMER_LABELS[i];
+    b.className = (S.timer===t ? "on" : "");
+    b.onclick = ()=>setTimer(i);
+    seg.appendChild(b);
+  });
+}
+
+/* ---------- Spiel ---------- */
+let G = null;
+
+function startGame(){
+  const pool = [];
+  S.cats.forEach(id=>{
+    const c = CATEGORIES.find(x=>x.id===id);
+    if(c) c.words.forEach(w=>pool.push({w:w, cat:c}));
+  });
+  const pick = pool[Math.floor(Math.random()*pool.length)];
+
+  const idx = [...Array(S.players).keys()];
+  shuffle(idx);
+  const imps = idx.slice(0, S.imps);
+
+  G = {
+    word: pick.w,
+    cat: pick.cat,
+    imps: imps,
+    cur: 0,
+    start: Math.floor(Math.random()*S.players),
+    seconds: S.timer,
+    paused: false
+  };
+  go("pass");
+  renderPass();
+}
+
+function shuffle(a){
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+
+function renderPass(){
+  document.getElementById("pass-name").textContent = playerName(G.cur);
+  document.getElementById("pass-badge").textContent = (G.cur+1) + " / " + S.players;
+}
+
+let holdTimer = null;
+function prepCard(){
+  const isImp = G.imps.includes(G.cur);
+  document.getElementById("card-who").textContent = playerName(G.cur);
+  document.getElementById("card-badge").textContent = (G.cur+1) + " / " + S.players;
+  const content = document.getElementById("content");
+  content.className = isImp ? "imposter" : "word";
+  content.innerHTML = isImp
+    ? '<div class="icon">🕵️</div><div class="big">DU BIST DER IMPOSTER</div><div class="small">' +
+      (S.hint ? "Kategorie: <b>" + G.cat.name + "</b><br>" : "") + "Bluffe mit, tu so als wüsstest du das Wort.</div>"
+    : '<div class="small" style="margin:0 0 10px">Das Geheimwort ist</div><div class="big">' + G.word +
+      '</div><div class="small">Kategorie: ' + G.cat.name + "</div>";
+  hideCard();
+  document.getElementById("next-btn").disabled = true;
+  document.getElementById("next-btn").textContent = (G.cur+1 < S.players) ? "Weiter" : "Alle haben geschaut";
+}
+
+function showCard(){
+  document.getElementById("cover").classList.add("hidden");
+  document.getElementById("content").classList.remove("hidden");
+  document.getElementById("holder").classList.add("armed");
+  document.getElementById("next-btn").disabled = false;
+  buzz(12);
+}
+function hideCard(){
+  document.getElementById("cover").classList.remove("hidden");
+  document.getElementById("content").classList.add("hidden");
+  document.getElementById("holder").classList.remove("armed");
+}
+
+const holder = document.getElementById("holder");
+["pointerdown","touchstart"].forEach(ev=>holder.addEventListener(ev, e=>{ e.preventDefault(); showCard(); }, {passive:false}));
+["pointerup","pointercancel","pointerleave","touchend","touchcancel"].forEach(ev=>holder.addEventListener(ev, e=>{ e.preventDefault(); hideCard(); }, {passive:false}));
+
+function nextPlayer(){
+  hideCard();
+  G.cur++;
+  if(G.cur < S.players){ renderPass(); go("pass"); }
+  else startPlay();
+}
+
+/* ---------- Diskussion ---------- */
+let tick = null;
+function startPlay(){
+  go("play");
+  document.getElementById("play-badge").textContent = S.imps===1 ? "1 Imposter" : S.imps + " Imposter";
+  document.getElementById("startbox").classList.toggle("hidden", !S.startPlayer);
+  document.getElementById("start-name").textContent = playerName(G.start);
+  const tb = document.getElementById("timerbox");
+  tb.classList.toggle("hidden", !S.timer);
+  document.getElementById("play-hint").textContent = "Reihum je ein Wort sagen, dann diskutieren und abstimmen.";
+  document.getElementById("pause").classList.remove("hidden");
+  clearInterval(tick);
+  if(S.timer){
+    G.seconds = S.timer; G.paused = false;
+    document.getElementById("pause").textContent = "Pause";
+    renderTimer();
+    tick = setInterval(()=>{
+      if(G.paused) return;
+      G.seconds--;
+      renderTimer();
+      if(G.seconds<=0){
+        clearInterval(tick);
+        buzz([200,100,200,100,400]);
+        document.getElementById("play-hint").textContent = "Zeit ist um – jetzt abstimmen!";
+        document.getElementById("pause").classList.add("hidden");
+      }
+    },1000);
+  }
+}
+function renderTimer(){
+  const m = Math.floor(Math.max(0,G.seconds)/60), s = Math.max(0,G.seconds)%60;
+  const el = document.getElementById("timer");
+  el.textContent = m + ":" + String(s).padStart(2,"0");
+  el.style.color = G.seconds<=10 ? "var(--bad)" : "var(--text)";
+}
+function togglePause(){
+  G.paused = !G.paused;
+  document.getElementById("pause").textContent = G.paused ? "Weiter" : "Pause";
+  buzz(8);
+}
+
+function reveal(){
+  clearInterval(tick);
+  go("reveal");
+  document.getElementById("rev-word").textContent = G.word;
+  document.getElementById("rev-cat").textContent = G.cat.emoji + " " + G.cat.name;
+  document.getElementById("rev-label").textContent = S.imps===1 ? "Der Imposter war" : "Die Imposter waren";
+  const box = document.getElementById("rev-people");
+  box.innerHTML = "";
+  for(let i=0;i<S.players;i++){
+    if(!G.imps.includes(i)) continue;
+    const d = document.createElement("div");
+    d.className = "person is";
+    d.textContent = "🕵️ " + playerName(i);
+    box.appendChild(d);
+  }
+  buzz(30);
+}
+function abort(){ clearInterval(tick); go("home"); }
+
+/* ---------- PWA ---------- */
+let deferred = null;
+window.addEventListener("beforeinstallprompt", e=>{
+  e.preventDefault(); deferred = e;
+  const b = document.getElementById("install");
+  b.classList.remove("hidden");
+  b.onclick = async ()=>{ b.classList.add("hidden"); deferred.prompt(); deferred = null; };
+});
+if("serviceWorker" in navigator){
+  window.addEventListener("load", ()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+}
+document.addEventListener("gesturestart", e=>e.preventDefault());
+
+renderSetup();
+</script>
+</body>
+</html>
