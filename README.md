@@ -3,7 +3,7 @@
 Das Imposter-Spiel als Web-App fürs Handy. **Ein Gerät, alle Spieler.**
 Alle bekommen dasselbe Geheimwort – nur der Imposter nicht. Wer blufft hier?
 
-👉 **Spielen:** https://LEONA-GITHUB.github.io/imposter-spiel/
+👉 **Spielen:** https://xarcen.github.io/imposter/
 
 ## Features
 
