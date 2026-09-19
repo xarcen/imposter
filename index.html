@@ -38,6 +38,7 @@ body{
   background-attachment:fixed;
   overscroll-behavior:none;
   -webkit-user-select:none;user-select:none;
+  -webkit-touch-callout:none;
   touch-action:manipulation;
 }
 #app{
@@ -119,7 +120,9 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 }
 .holder.armed{background:linear-gradient(160deg,#2b2f63,#20244a)}
 .holder .big{font-size:38px;font-weight:800;letter-spacing:-.02em;word-break:break-word;line-height:1.15}
-.holder .small{color:var(--muted);margin-top:10px;font-size:16px}
+.holder .small{color:var(--muted);margin-top:12px;font-size:16px}
+.holder .tip{margin-top:16px;padding:12px 18px;border-radius:16px;background:rgba(255,255,255,.07);
+  border:1px solid var(--line);font-size:18px;font-weight:700;color:var(--text)}
 .holder .icon{font-size:56px;margin-bottom:12px}
 .imposter .big{color:var(--bad)}
 .word .big{color:var(--good)}
@@ -166,8 +169,8 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
     <div class="block">
       <ol class="rules">
         <li><b>Handy herumgeben.</b> Jeder schaut seine Karte alleine an (Finger auf die Karte halten).</li>
-        <li><b>Alle bekommen dasselbe Wort</b> – ausser dem Imposter. Der sieht nur, dass er der Imposter ist.</li>
-        <li><b>Reihum je ein Hinweis.</b> Ein einzelnes Wort, das zum Geheimwort passt – aber nicht zu offensichtlich, sonst errät es der Imposter.</li>
+        <li><b>Alle bekommen dasselbe Wort</b> – ausser dem Imposter. Der sieht nur, dass er der Imposter ist. Wenn ihr «Tipp für den Imposter» einschaltet, bekommt er zusätzlich einen sehr vagen Hinweis wie «es lebt».</li>
+        <li><b>Reihum je ein Hinweis.</b> Jeder sagt ein einzelnes Wort zum Geheimwort. Zu genau? Der Imposter errät es. Zu vage? Du wirkst selber verdächtig.</li>
         <li><b>Der Imposter blufft</b> und tut so, als kenne er das Wort.</li>
         <li><b>Diskutieren und abstimmen:</b> Auf drei zeigen alle gleichzeitig auf eine Person.</li>
         <li><b>Auflösen:</b> Die Gruppe gewinnt, wenn sie den Imposter erwischt. Der Imposter gewinnt, wenn er durchkommt – oder das Wort errät.</li>
@@ -197,7 +200,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
         </div>
       </div>
       <div class="row">
-        <div><span class="label">Eigene Namen</span><span class="hint">statt «Spieler 1, 2, 3…»</span></div>
+        <div><span class="label">Eigene Namen</span><span class="hint">leer lassen = «Spieler 1, 2, 3…»</span></div>
         <div class="switch" id="sw-names" onclick="toggle('useNames')"></div>
       </div>
     </div>
@@ -214,7 +217,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 
     <div class="block">
       <div class="row">
-        <div><span class="label">Hinweis für Imposter</span><span class="hint">er sieht die Kategorie</span></div>
+        <div><span class="label">Tipp für den Imposter</span><span class="hint">ein vager Hinweis, z.&nbsp;B. «es lebt»</span></div>
         <div class="switch" id="sw-hint" onclick="toggle('hint')"></div>
       </div>
       <div class="row">
@@ -237,7 +240,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
     <div class="spacer"></div>
     <div style="text-align:center;font-size:56px">📱</div>
     <div class="passname" id="pass-name">Spieler 1</div>
-    <div class="progress">Handy weitergeben – nur du darfst schauen.</div>
+    <div class="progress">Handy weitergeben.<br>Nur du darfst jetzt auf den Bildschirm schauen.</div>
     <div class="spacer"></div>
     <button class="btn" onclick="go('card')">Karte ansehen</button>
   </section>
@@ -282,6 +285,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
       <div class="big" style="font-size:38px;font-weight:800;color:var(--good)" id="rev-word">—</div>
       <div class="progress" style="margin:20px 0 2px" id="rev-label">Der Imposter war</div>
       <div class="list-people" id="rev-people"></div>
+      <div class="progress" style="margin:18px 0 0" id="rev-tip"></div>
     </div>
     <div class="spacer"></div>
     <button class="btn" onclick="startGame()">Nochmal spielen</button>
@@ -298,7 +302,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 /* ---------- Einstellungen ---------- */
 const TIMERS = [0,60,120,180,300];
 const TIMER_LABELS = ["Aus","1 min","2 min","3 min","5 min"];
-const DEFAULTS = {players:5, imps:1, useNames:false, names:[], hint:true, startPlayer:true, timer:0, cats:CATEGORIES.map(c=>c.id)};
+const DEFAULTS = {players:5, imps:1, useNames:true, names:[], hint:false, startPlayer:true, timer:0, cats:CATEGORIES.map(c=>c.id)};
 let S = load();
 
 function load(){
@@ -416,6 +420,10 @@ function startGame(){
   });
   const pick = pool[Math.floor(Math.random()*pool.length)];
 
+  // Tipp wählen – aber nie einen, der das Wort selber enthält
+  let tips = pick.cat.hints.filter(h => !h.toLowerCase().includes(pick.w.toLowerCase()));
+  if(!tips.length) tips = pick.cat.hints;
+
   const idx = [...Array(S.players).keys()];
   shuffle(idx);
   const imps = idx.slice(0, S.imps);
@@ -423,6 +431,7 @@ function startGame(){
   G = {
     word: pick.w,
     cat: pick.cat,
+    tip: tips[Math.floor(Math.random()*tips.length)],
     imps: imps,
     cur: 0,
     start: Math.floor(Math.random()*S.players),
@@ -451,10 +460,10 @@ function prepCard(){
   const content = document.getElementById("content");
   content.className = isImp ? "imposter" : "word";
   content.innerHTML = isImp
-    ? '<div class="icon">🕵️</div><div class="big">DU BIST DER IMPOSTER</div><div class="small">' +
-      (S.hint ? "Kategorie: <b>" + G.cat.name + "</b><br>" : "") + "Bluffe mit, tu so als wüsstest du das Wort.</div>"
-    : '<div class="small" style="margin:0 0 10px">Das Geheimwort ist</div><div class="big">' + G.word +
-      '</div><div class="small">Kategorie: ' + G.cat.name + "</div>";
+    ? '<div class="icon">🕵️</div><div class="big">Du bist der Imposter</div>' +
+      (S.hint ? '<div class="tip">Dein Tipp: ' + G.tip + "</div>" : "") +
+      '<div class="small">Bluff mit. Hör gut zu und tu so, als wüsstest du das Wort.</div>'
+    : '<div class="small" style="margin:0 0 10px">Das Geheimwort ist</div><div class="big">' + G.word + "</div>";
   hideCard();
   document.getElementById("next-btn").disabled = true;
   document.getElementById("next-btn").textContent = (G.cur+1 < S.players) ? "Weiter" : "Alle haben geschaut";
@@ -531,6 +540,7 @@ function reveal(){
   document.getElementById("rev-word").textContent = G.word;
   document.getElementById("rev-cat").textContent = G.cat.emoji + " " + G.cat.name;
   document.getElementById("rev-label").textContent = S.imps===1 ? "Der Imposter war" : "Die Imposter waren";
+  document.getElementById("rev-tip").textContent = S.hint ? "Der Tipp war: " + G.tip : "";
   const box = document.getElementById("rev-people");
   box.innerHTML = "";
   for(let i=0;i<S.players;i++){

@@ -10,8 +10,9 @@ Alle bekommen dasselbe Geheimwort – nur der Imposter nicht. Wer blufft hier?
 - 📱 Für iPhone gebaut (grosse Buttons, Dark Mode, Safe-Area)
 - 🏷️ 14 Kategorien mit 700 Wörtern (Essen, Tiere, Sport, Filme, Schweiz, Games …)
 - 👥 3–20 Spieler, 1–3 Imposter
-- ✍️ Optional eigene Namen statt «Spieler 1, 2, 3»
-- 💡 Optionaler Hinweis für den Imposter (er sieht die Kategorie)
+- ✍️ Eigene Namen (standardmässig an) – leer lassen gibt «Spieler 1, 2, 3»
+- 💡 Optionaler Tipp für den Imposter: ein absichtlich vager Hinweis wie «es lebt» oder
+  «man kann es kaufen» – stimmt immer, verrät aber fast nichts (standardmässig aus)
 - ⏱️ Diskussions-Timer (1–5 Minuten)
 - 🎲 Startspieler wird ausgelost
 - 🔒 Karte nur sichtbar, solange man den Finger draufhält
@@ -30,7 +31,8 @@ Auf Android: Chrome-Menü → *App installieren*.
 ## Spielregeln
 
 1. Handy herumgeben, jeder schaut seine Karte alleine an.
-2. Alle sehen dasselbe Wort – der Imposter sieht nur, dass er der Imposter ist.
+2. Alle sehen dasselbe Wort – der Imposter sieht nur, dass er der Imposter ist
+   (und, falls eingeschaltet, einen sehr vagen Tipp).
 3. Reihum sagt jeder **ein einzelnes Wort** als Hinweis zum Geheimwort.
    Nicht zu genau – sonst errät es der Imposter. Nicht zu vage – sonst wirkst du verdächtig.
 4. Der Imposter blufft mit und tut so, als kenne er das Wort.
@@ -43,12 +45,15 @@ Auf Android: Chrome-Menü → *App installieren*.
 Alle Wörter stehen in [`words.js`](words.js). Eine Kategorie sieht so aus:
 
 ```js
-{ id: "meine-kategorie", name: "Meine Kategorie", emoji: "🎯", words: [
+{ id: "meine-kategorie", name: "Meine Kategorie", emoji: "🎯",
+  hints: ["ein vager Tipp","noch ein vager Tipp","und noch einer","und ein vierter"], words: [
   "Wort eins","Wort zwei","Wort drei"
 ]},
 ```
 
 Einfach eine neue Kategorie in die Liste `CATEGORIES` einfügen, speichern, fertig.
+Die `hints` sind die vagen Tipps für den Imposter – sie sollen für *alle* Wörter der
+Kategorie stimmen und das Wort nie selber enthalten.
 (Danach in `sw.js` die Zeile `const CACHE = "imposter-v1"` auf `v2` erhöhen, damit
 installierte Apps die neue Version laden.)
 
